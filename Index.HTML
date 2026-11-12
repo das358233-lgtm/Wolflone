@@ -1,0 +1,296 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Break-Even Point Calculator</title>
+<style>
+* { box-sizing: border-box; }
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f0f4f8;
+  color: #1e293b;
+  padding: 20px 12px;
+}
+
+.container {
+  max-width: 500px;
+  margin: 30px auto;
+  background: white;
+  padding: 28px;
+  border-radius: 16px;
+  box-shadow: 0 6px 25px #d8e0e8;
+}
+
+h1 {
+  text-align: center;
+  color: #0f766e;
+}
+
+.subtitle {
+  text-align: center;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+label {
+  display: block;
+  margin-top: 18px;
+  font-weight: bold;
+}
+
+input, button {
+  width: 100%;
+  padding: 13px;
+  margin-top: 8px;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+input {
+  border: 1px solid #cbd5e1;
+}
+
+button {
+  background: #0d9488;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 24px;
+}
+
+button:hover {
+  background: #0f766e;
+}
+
+.results {
+  background: #f0fdfa;
+  padding: 18px;
+  border-radius: 12px;
+  margin-top: 22px;
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin: 16px 0;
+  border-bottom: 1px solid #ccfbf1;
+  padding-bottom: 10px;
+}
+
+.value {
+  font-weight: bold;
+  color: #0f766e;
+  text-align: right;
+}
+
+.profit { color: #15803d; }
+.loss { color: #dc2626; }
+
+.error {
+  color: #b91c1c;
+  margin-top: 14px;
+}
+
+.note {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.6;
+  margin-top: 20px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>Break-Even Calculator</h1>
+
+<p class="subtitle">
+Understand when your business will cover
+its costs and start generating profit.
+</p>
+
+<label for="fixed">Total Fixed Costs (₹)</label>
+<input type="number" id="fixed"
+min="0" step="any"
+placeholder="Example: 50000">
+
+<label for="selling">Selling Price Per Unit (₹)</label>
+<input type="number" id="selling"
+min="0.01" step="any"
+placeholder="Example: 500">
+
+<label for="variable">Variable Cost Per Unit (₹)</label>
+<input type="number" id="variable"
+min="0" step="any"
+placeholder="Example: 300">
+
+<label for="quantity">Expected Units Sold</label>
+<input type="number" id="quantity"
+min="0" step="1"
+placeholder="Example: 400">
+
+<button onclick="calculateBreakEven()">
+Calculate Break-Even Point
+</button>
+
+<p id="error" class="error" role="alert"></p>
+
+<div id="results" class="results" hidden>
+
+<h2>Business Analysis</h2>
+
+<div class="result-row">
+<span>Contribution Per Unit:</span>
+<span id="contribution" class="value"></span>
+</div>
+
+<div class="result-row">
+<span>Break-Even Units:</span>
+<span id="breakEvenUnits" class="value"></span>
+</div>
+
+<div class="result-row">
+<span>Break-Even Sales:</span>
+<span id="breakEvenSales" class="value"></span>
+</div>
+
+<div class="result-row">
+<span>Expected Revenue:</span>
+<span id="revenue" class="value"></span>
+</div>
+
+<div class="result-row">
+<span>Expected Profit / Loss:</span>
+<span id="profit" class="value"></span>
+</div>
+
+<h3 id="status"></h3>
+
+</div>
+
+<p class="note">
+This calculator assumes constant selling prices,
+constant variable costs per unit, and fixed costs
+within the relevant business activity range.
+It excludes taxes and financing costs.
+</p>
+
+</div>
+
+<script>
+const formatMoney = value =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+
+function calculateBreakEven() {
+  const ids = [
+    "fixed", "selling", "variable", "quantity"
+  ];
+
+  const inputs = ids.map(id =>
+    document.getElementById(id).value
+  );
+
+  const values = inputs.map(Number);
+
+  const error = document.getElementById("error");
+  const results = document.getElementById("results");
+
+  error.textContent = "";
+  results.hidden = true;
+
+  const [fixed, selling, variable, quantity] = values;
+
+  if (
+    inputs.some(value => value.trim() === "") ||
+    values.some(value =>
+      !Number.isFinite(value) || value < 0
+    ) ||
+    selling <= 0 ||
+    !Number.isSafeInteger(quantity)
+  ) {
+    error.textContent =
+      "Please enter valid, non-negative values. " +
+      "Selling price must be positive and " +
+      "quantity must be a whole number.";
+    return;
+  }
+
+  const contribution = selling - variable;
+
+  if (contribution <= 0) {
+    error.textContent =
+      "Selling price must exceed variable cost " +
+      "per unit to calculate a break-even point.";
+    return;
+  }
+
+  const breakEvenUnits = Math.ceil(
+    fixed / contribution
+  );
+
+  const breakEvenSales = breakEvenUnits * selling;
+  const revenue = quantity * selling;
+  const profit = quantity * contribution - fixed;
+
+  if (
+    ![
+      contribution, breakEvenUnits,
+      breakEvenSales, revenue, profit
+    ].every(Number.isFinite) ||
+    !Number.isSafeInteger(breakEvenUnits)
+  ) {
+    error.textContent =
+      "Values are too large. Please enter " +
+      "smaller amounts.";
+    return;
+  }
+
+  document.getElementById("contribution").textContent =
+    formatMoney(contribution);
+
+  document.getElementById("breakEvenUnits").textContent =
+    breakEvenUnits.toLocaleString("en-IN") + " units";
+
+  document.getElementById("breakEvenSales").textContent =
+    formatMoney(breakEvenSales);
+
+  document.getElementById("revenue").textContent =
+    formatMoney(revenue);
+
+  const profitElement = document.getElementById("profit");
+  const status = document.getElementById("status");
+
+  profitElement.textContent = formatMoney(profit);
+
+  if (profit > 0) {
+    profitElement.className = "value profit";
+    status.textContent = "Your business is profitable!";
+    status.className = "profit";
+  } else if (profit < 0) {
+    profitElement.className = "value loss";
+    status.textContent = "Your business is making a loss.";
+    status.className = "loss";
+  } else {
+    profitElement.className = "value";
+    status.textContent =
+      "Your business is exactly at break-even!";
+    status.className = "";
+  }
+
+  results.hidden = false;
+}
+</script>
+
+</body>
+</html>
